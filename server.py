@@ -1,10 +1,20 @@
+from random import randint
 import socket
 from threading import Thread
 
+
+def set_new_port() -> int:
+    r = randint(9000, 65535)
+    with open('port.txt', 'w') as f:
+        f.write(str(r))
+    print('Port:', r)
+    return r
+
+
 server = socket.socket(socket.SO_REUSEADDR)
 print('Socket created')
-server.bind(('localhost', 9999))
 
+server.bind(('localhost', set_new_port()))
 server.listen()
 print('Waiting for connection')
 clients = []
@@ -12,7 +22,6 @@ clients_names = []
 
 
 # chatting_with = []
-
 
 def connect():
     while True:
@@ -45,8 +54,12 @@ def receive_message(client, client_name):
             chatting_with = None
         elif msg[0] == '/' and msg[1:].isdigit():
             index = int(msg[1:]) - 1
-            chatting_with = clients[index]
-            client.send(b'Message will be send to ' + clients_names[index].encode())
+            if index <= len(clients):
+                chatting_with = clients[index]
+                client.send(b'Message will be send to ' +
+                            clients_names[index].encode())
+            else:
+                client.send(b'User not available')
         elif chatting_with:
             send_personal_message(client_name, chatting_with, msg)
         else:
@@ -60,7 +73,8 @@ def send_personal_message(sender_name, send_to, message: str):
 
 
 def send_group_message(sender, sender_name, message: str):
-    clients_copy = [client for client in clients if client is not sender]
+    clients_copy = clients.copy()
+    clients_copy.remove(sender)
     for client in clients_copy:
         msg = f'\t\t{sender_name}: {message}'
         client.send(msg.encode())
@@ -96,6 +110,7 @@ def send_online_users(send_to: socket):
 def remove_client(client):
     index = clients.index(client)
     client.send(b'Exiting...')
+    print('Disconnected with', clients_names[index])
     del clients[index]
     broadcast_from_server(clients_names[index] + ' is offline')
     del clients_names[index]

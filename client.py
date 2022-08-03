@@ -1,9 +1,15 @@
 import socket
 from threading import Thread
 
+
+def get_port() -> int:
+    with open('port.txt') as f:
+        return int(f.read())
+
+
 client = socket.socket()
 
-client.connect(('localhost', 9999))
+client.connect(('localhost', get_port()))
 
 name = input('Enter your name: ')
 client.send(name.encode())
