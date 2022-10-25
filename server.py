@@ -3,6 +3,10 @@ import socket
 from threading import Thread
 
 
+clients = []
+clients_names = []
+
+
 def set_new_port() -> int:
     r = randint(9000, 65535)
     with open('port.txt', 'w') as f:
@@ -11,19 +15,9 @@ def set_new_port() -> int:
     return r
 
 
-server = socket.socket(socket.SO_REUSEADDR)
-print('Socket created')
-
-server.bind(('localhost', set_new_port()))
-server.listen()
-print('Waiting for connection')
-clients = []
-clients_names = []
-
-
 # chatting_with = []
 
-def connect():
+def connect(server):
     while True:
         client, address = server.accept()
         name = client.recv(1024).decode().upper()
@@ -116,4 +110,16 @@ def remove_client(client):
     del clients_names[index]
 
 
-Thread(target=connect).start()
+def main():
+    server = socket.socket(socket.SO_REUSEADDR)
+    print('Socket created')
+
+    server.bind(('localhost', set_new_port()))
+    server.listen()
+    print('Waiting for connection')
+
+    Thread(target=connect, args=(server,)).start()
+
+
+if __name__ == '__main__':
+    main()
